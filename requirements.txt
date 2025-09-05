@@ -1,2 +1,9 @@
 strands-agents>=1.0.0
 strands-agents-tools>=0.2.0
+uv
+awslabs.aws-documentation-mcp-server
+fastapi
+uvicorn
+httpx
+anyio
+mcp 
