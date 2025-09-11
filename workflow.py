@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from strands import Agent
-from strands_tools import use_llm, memory
+from strands_tools import use_agent, memory
 from mcp.client.sse import sse_client
 from strands.tools.mcp import MCPClient
 from my_env import model_id
@@ -20,28 +20,30 @@ You are a helpful knowledge assistant that provides clear answers
 based on information retrieved from a knowledge base.
 """
 
-def extract_llm_text(llm_response):
-    """Extract text content from agent/LLM response dict."""
-    if isinstance(llm_response, dict) and llm_response.get("content"):
-        return llm_response["content"][0]["text"].strip()
-    return str(llm_response)
+def extract_agent_text(agent_response):
+    """Extract text content from agent/use_agent response dict."""
+    if isinstance(agent_response, dict) and agent_response.get("content"):
+        return agent_response["content"][0]["text"].strip()
+    return str(agent_response)
 
 def run_dynamic_agent(query):
+    """Run a single agent that can use KB/memory, MCP tools, and LLM fallback."""
+    # Use MCP client context
     with MCPClient(lambda: sse_client("http://localhost:8000/sse")) as sse_mcp_client:
-        # Get MCP tools (calculator, etc.)
+        # Get MCP tools
         mcp_tools = sse_mcp_client.list_tools_sync()
         
-        # Single agent with all tools
-        agent = Agent(tools=[memory, use_llm] + mcp_tools, model=model_id)
+        # Single agent with memory (KB), use_agent, and MCP tools
+        agent = Agent(tools=[memory, use_agent] + mcp_tools, model=model_id)
         
         # Let Strands route the query to the best tool automatically
         response = agent(query)
-        text = extract_llm_text(response)
+        text = extract_agent_text(response)
         print("\n[Agent Response]\n", text)
 
 if __name__ == "__main__":
     print("\n🧠 Multi-Tool Agent 🧠")
-    print("This agent uses KB, MCP tools (like calculator), then generic LLM fallback.\n")
+    print("This agent uses KB/memory, MCP tools (like calculator), then generic LLM fallback.\n")
     
     while True:
         user_input = input("> ").strip()
